@@ -2,6 +2,7 @@
 library(shiny)
 library(randomForest)
 
+##Reading the train data from csv
 trainData <- read.csv("train.csv",comment.char="", quote="\"", sep=",", 
                     header=TRUE, 
                     stringsAsFactors=FALSE,
@@ -9,6 +10,8 @@ trainData <- read.csv("train.csv",comment.char="", quote="\"", sep=",",
                                  "numeric", "integer", "integer", "character", 
                                  "numeric", "character", "character"),
                     na.strings = "NA")
+
+## Preoaring variable features for prediction
 trainData$Embarked[which(trainData$Embarked == "")] <- 'S'
 trainData$Pclass <- as.numeric(trainData$Pclass)
 trainData$Sex <- factor(trainData$Sex)
@@ -25,9 +28,15 @@ trainData$Age_Group<-factor(trainData$Age_Group)
 trainData$Cabin_Cat[which(trainData$Cabin == "")]<-0
 trainData$Cabin_Cat[which(trainData$Cabin != "")]<-1
 trainData$Cabin_Cat<-factor(trainData$Cabin_Cat)
+
+##Creating a subset of required variables
 subtrain<-trainData[,c("PassengerId","Pclass","Embarked", "Cabin_Cat","Age_Group","Sex","Family","Survived")]
+
+##Training the model using Random Forest Algorithm
 model<- randomForest(Survived ~ Pclass+Sex+Embarked+Age_Group+Cabin_Cat+Family, data=subtrain, 
                       ntree = 5000, importance = TRUE, na.action=na.omit)
+
+##Creating a dummy record that will be overwritten using inputs entered by user
 PassengerId<-893
 Pclass<-1
 Cabin_Cat<-0
@@ -36,6 +45,8 @@ Age_Group<-'Adult'
 Embarked<-'Q'
 Survived<-1
 Family<-0
+
+##Creating the final data frame that will be ised in prediction
 test<-data.frame(PassengerId,Pclass,Embarked,Cabin_Cat,Age_Group,Sex,Family,Survived)
 final<-rbind(subtrain,test)
 
@@ -46,6 +57,7 @@ shinyServer(function(input,output){
         #Predicting on entire dataset by appending the user input to a new record
         #in the dataset. Finally returning the predicted value of that dataset
         #The predicted value is in terms of probability which is converted to %
+        ##The dummy record is overwritten by user input.
         
         preds <- reactive( {
                 
